@@ -25,8 +25,14 @@ import androidx.core.app.ActivityCompat;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 
 import org.greenrobot.eventbus.EventBus;
@@ -47,6 +53,8 @@ public class MyMap extends AppCompatActivity {
     public static final int ACTIVITY_ID = 113;
     private static final int PERMISSION_ALL = 123;
     private static final int PERMISSIONS_FINE_LOCATION = 99;
+    public static final int UPDATE_INTERVAL = 1000;
+    public static final int FASTEST_INTERVAL = 500;
 
     MapView map = null;
     GeoPoint startPoint;
@@ -60,6 +68,8 @@ public class MyMap extends AppCompatActivity {
     LocationRequest locationRequest;
     LocationCallback locationCallBack;
 
+    int baseNum = 100;
+
     //CustomMessageEvent event;
 
     double latit;
@@ -67,13 +77,18 @@ public class MyMap extends AppCompatActivity {
 
     MyApplication app;
 
+    FirebaseDatabase firebaseDatabase;
+    DatabaseReference databaseReference;
+
     //private ArrayList<LatLng> points;
 
     TextView Lon;
     TextView Lat;
     ToggleButton tbOk;
-    Button btn;
+    Button btn, btn2;
     Switch aSwitch;
+
+    Handler handler;
 
     String[] PERMISSIONS = {
             android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -93,6 +108,12 @@ public class MyMap extends AppCompatActivity {
         setContentView(R.layout.activity_my_map);
         btn = findViewById(R.id.updateGPSbtn);
         aSwitch = findViewById(R.id.switchLoop);
+        btn2 = findViewById(R.id.stopGPSupdate);
+
+        firebaseDatabase = FirebaseDatabase.getInstance();
+        databaseReference = firebaseDatabase.getReference("Lap times "+String.valueOf(baseNum));
+        addDataToFirebase("blaaaa");
+
 
         app = (MyApplication) getApplication();
 
@@ -106,15 +127,46 @@ public class MyMap extends AppCompatActivity {
         //tbOk = findViewById(R.id.tbOn);
         rnd = new Random();
 
+        locationRequest = LocationRequest.create();
+
+        locationRequest.setInterval(UPDATE_INTERVAL);
+
+        locationRequest.setFastestInterval(FASTEST_INTERVAL);
+
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        locationCallBack = new LocationCallback() {
+            @Override
+            public void onLocationResult(@NonNull LocationResult locationResult) {
+                super.onLocationResult(locationResult);
+
+                Location location = locationResult.getLastLocation();
+                initMapStartGPS(location);
+                //updateGPS();
+            }
+        };
+
+
+        aSwitch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(aSwitch.isChecked()){
+                    startLocationUpdates();
+                }
+                else stopLocationUpdates();
+            }
+        });
+
         EventBus.getDefault().register(this);
 
-        btn.setOnClickListener(new View.OnClickListener() {
+        /*btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 updateGPS();
             }
-        });
-        final Handler handler = new Handler();
+        });*/
+        /*
+        handler = new Handler();
         handler.postDelayed(new Runnable() {
             int i =1;
             @Override
@@ -124,17 +176,60 @@ public class MyMap extends AppCompatActivity {
                 //Log.i(TAG, "Primer"+i);
                 handler.postDelayed(this, 500);
             }
-        }, 500);
+        }, 500);*/
 
-        aSwitch.setOnClickListener(new View.OnClickListener() {
+
+        startMap();
+        //onEvent();
+    }
+
+    private void stopLocationUpdates() {
+        fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
+    }
+
+    @SuppressLint("MissingPermission")
+    private void startLocationUpdates() {
+        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack, null);
+        updateGPS();
+    }
+
+    public void startMap(){
+        handler = new Handler();
+
+        btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(aSwitch.isChecked()){
-                    updateGPS();
-                }
+                handler.postDelayed(runnable, 0);
+
             }
         });
-        //onEvent();
+        btn2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                handler.removeCallbacks(runnable);
+                //handler.postDelayed(runnable, 5000);
+                fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
+            }
+        });
+
+    }
+
+    public Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+            updateGPS();
+            handler.postDelayed(this, 0);
+            if(btn2.isPressed()){
+                handler.removeCallbacks(this);
+                fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
+            }
+        }
+    };
+
+    protected void onStop(){
+        super.onStop();
+        handler.removeCallbacks(runnable);
+
     }
 
 
@@ -149,6 +244,23 @@ public class MyMap extends AppCompatActivity {
         //Lat.setText(String.valueOf(latit));
     }
 
+
+    private void addDataToFirebase(String laptime){
+        databaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                databaseReference.setValue(laptime);
+                Toast.makeText(MyMap.this, "Data added", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(MyMap.this, "Data failed to add", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     @SuppressLint("MissingPermission")
     private void updateGPS(){
         // get permissions from ndroid user to track GPS
@@ -157,7 +269,7 @@ public class MyMap extends AppCompatActivity {
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MyMap.this);
 
 
-        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack, null);
+        //fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack, null);
 
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
             // user provided permission
@@ -238,6 +350,8 @@ public class MyMap extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
+        fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
+        finish();
     }
 
     /*

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "934923760969",
+    "project_id": "raceappdatabase",
+    "storage_bucket": "raceappdatabase.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:934923760969:android:66b0c92135c46a2d725698",
+        "android_client_info": {
+          "package_name": "com.example.RaceApp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "934923760969-u95otsr8m3d4fipnu41gepk0aqp48sh5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.RaceApp",
+            "certificate_hash": "2b55a919a676d1ab06adb93415771b3cc2519979"
+          }
+        },
+        {
+          "client_id": "934923760969-5b4t0qu4739c7fo9ig96r360fp0qeil0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEbkLNxZH-C2lDtCQ689SEQRNM3rmIpnw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "934923760969-5b4t0qu4739c7fo9ig96r360fp0qeil0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
