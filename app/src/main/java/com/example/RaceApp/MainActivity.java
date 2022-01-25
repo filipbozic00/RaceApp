@@ -354,6 +354,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+        //euklidska razdalja
 
        /* Log.i(TAG,"Longditude: "+lon);
         if((int)latitude == (int)lat && (int)longditude == (int)lon){
